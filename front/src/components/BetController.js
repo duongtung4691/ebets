@@ -30,7 +30,7 @@ import {
   TableRowColumn,
 } from 'material-ui/Table';
 
-import {formatEth} from 'utils/ethUtils';
+import {formatEth, formatToken} from 'utils/ethUtils';
 import {computeFinalGain} from 'utils/betMath';
 import {
   Step,
@@ -306,7 +306,8 @@ class BetController extends Component {
             <TableRow>
               <TableHeaderColumn colSpan='2'>Address</TableHeaderColumn>
               <TableHeaderColumn>Amount</TableHeaderColumn>
-              <TableHeaderColumn>For Team</TableHeaderColumn>
+              <TableHeaderColumn>Currency</TableHeaderColumn>
+              <TableHeaderColumn>Team</TableHeaderColumn>
               <TableHeaderColumn>At</TableHeaderColumn>
             </TableRow>
           </TableHeader>
@@ -317,7 +318,8 @@ class BetController extends Component {
                   <TableRowColumn colSpan='2' >
                     <Address address={bet.from} />
                   </TableRowColumn>
-                  <TableRowColumn>{formatEth(bet.amount)}</TableRowColumn>
+                  <TableRowColumn>{bet.erc20 !== undefined ? formatToken(bet.amount, this.props.erc20Contracts[bet.erc20].decimals) : formatEth(bet.amount)}</TableRowColumn>
+                  <TableRowColumn>{bet.erc20 !== undefined ? this.props.erc20Contracts[bet.erc20].name : 'Ether'}</TableRowColumn>
                   <TableRowColumn>{(bet.forTeam) ? this.props.team1Name : this.props.team0Name}</TableRowColumn>
                   <TableRowColumn>{moment(bet.timestamp*1e3).format('LLL')}</TableRowColumn>
                 </TableRow>
