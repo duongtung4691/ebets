@@ -14,6 +14,8 @@ import TextField from 'material-ui/TextField';
 import DateTimePicker from './DateTimePicker';
 import PropTypes from 'prop-types';
 import CircularProgress from 'material-ui/CircularProgress';
+import Checkbox from 'material-ui/Checkbox';
+import Chip from 'material-ui/Chip';
 
 import Dialog from 'material-ui/Dialog';
 import {Card, CardHeader, CardText} from 'material-ui/Card';
@@ -28,12 +30,18 @@ import EbetsJson from 'build/contracts/Ebets.json';
 
 import betFields from 'utils/betFields';
 import versusIcon from 'assets/imgs/icons/vs.png';
+import AddIcon from 'material-ui/svg-icons/content/add';
+import {greenA200} from 'material-ui/styles/colors';
 
 import Arbiters from './Arbiters';
 import {getParsedCategories} from 'utils/ebetsCategories';
+import _ from 'lodash';
+
+
 //TODO: put this in a configruation file
 const ARBITER_DEADLINE_PERIOD = 7
 const SELF_DESTRUCT_DEADLINE_PERIOD = 14
+const NEW_ARBITER = '0x0000000000000000000000000000000000000000';
 
 class BetForm extends Component {
   static gridListStyle = {
@@ -48,6 +56,7 @@ class BetForm extends Component {
   constructor(props) {
     super(props)
     this.state = {
+      arbiterMembers: [],
       alert: {
         open: false,
         type: 'info',
@@ -123,7 +132,7 @@ class BetForm extends Component {
 
   handleOnChange = (event) => {
     const target = event.target;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const value = event.target.value;
     const name = target.name;
 
     this.setState({ [name]: value });
@@ -193,7 +202,6 @@ class BetForm extends Component {
         new BigNumber(moment(this.state.timestampSelfDestructDeadline).unix())
       ];
 
-      //const arbiterAddress = Arbiters.addressOf(this.state.selectedArbiter)
       let createdBet = instance.createBet(
         this.state.selectedArbiter,
         this.state.team0Name,
@@ -218,6 +226,101 @@ class BetForm extends Component {
     })
   }
 
+  updatePrivateBet = (event, value) => {
+    this.setState({isPrivate: value})
+  }
+
+  updateNewArbiter = (event, value) => {
+    this.setState({newArbiter: value})
+  }
+  
+  handleNewArbiterMember = (event, inputText) => {
+    var newMemberState = {
+      memberErrorMessage: null,
+      newMember: inputText
+    };
+    if(!isAddress(inputText)) {
+      newMemberState = {
+        memberErrorMessage: 'Invalid address'
+      };
+    }
+    console.log(inputText);
+    this.setState(newMemberState);
+  }
+
+  handleAddMember = () => {
+    if (this.state.newMember) {
+      this.setState(previousState => {
+        previousState.arbiterMembers.push(previousState.newMember);
+        return { newMember: null }
+      });
+    }
+  }
+
+  handleDeleteMember = (address) => () => {
+    for (let idx in this.state.arbiterMembers)
+      if (this.state.arbiterMembers[idx] === address) {
+        this.setState(previousState => {previousState.arbiterMembers.splice(idx, 1);})
+        break;
+      }
+  }
+  Members = () => {
+    if (this.state.arbiterMembers.length === 0)
+      return null;
+    let arbiters = this.state.arbiterMembers.map(arbiterAddress => {
+      return <Chip
+        key={arbiterAddress}
+        onRequestDelete={this.handleDeleteMember(arbiterAddress)}
+        > 
+      {arbiterAddress}
+      </Chip>
+    });
+    return <div> {arbiters} </div>
+  }
+
+  ArbiterForm = () => {
+    if (this.state.newArbiter) {
+      return (
+        <form onSubmit={this.handleOnSubmit} >
+          <Card>
+            <CardHeader
+              title="New Arbiter"
+            />
+            <CardText>
+              <GridList
+                style={{flexWrap: 'nowrap', alignItems: 'stretch'}}
+                cellHeight={'auto'}
+              >
+                <GridTile>
+                Members
+                  <this.Members />
+                </GridTile>
+                <GridTile>
+                  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                    <TextField
+                      style={{width: 380}}
+                      name="members"
+                      value={(this.state.newMember === null) ? '' : this.state.newMember}
+                      floatingLabelText="New Member"
+                      onChange={this.handleNewArbiterMember}
+                      errorText={this.state.memberErrorMessage}
+                    />
+                    <RaisedButton label="Add" onClick={this.handleAddMember} primary />
+                  </div>
+                </GridTile>
+                <GridTile>
+                 
+                </GridTile>
+              </GridList>
+            </CardText>
+          </Card>
+        <RaisedButton type="submit" label="Create Arbiter" primary />
+      </form>
+      )
+    }
+    return null;
+  }
+
   render() {
     if (this.state.alert.type && this.state.alert.message) {
       // TODO apply layouts
@@ -233,6 +336,13 @@ class BetForm extends Component {
                     </Dialog>
                   </div>
     }
+    let ourArbiters = Arbiters.arbiters(this.context.web3.networkId);
+    /*ourArbiters.push({key: <MenuItem
+      primaryText = {'New Arbiter'}
+      leftIcon = {<AddIcon color={greenA200} />}
+      />,
+      value:NEW_ARBITER});*/
+
     return (
       <div style={BetForm.gridRootStyle}>
         {status}
@@ -290,7 +400,7 @@ class BetForm extends Component {
                     filter={(searchText, key, v) => 
                       (v.key.props.primaryText.toLowerCase().indexOf(searchText) !== -1)}
                     openOnFocus={true}
-                    dataSource={Arbiters.arbiters(this.context.web3.networkId)}
+                    dataSource={ourArbiters}
                     dataSourceConfig={{ text: 'value', value: 'key' }}
                     onNewRequest={this.handleArbiterSubmit}
                     onUpdateInput={this.handleArbiterChange}
@@ -345,8 +455,27 @@ class BetForm extends Component {
                 </CardText>
               </Card><br />
             </div>
-            <RaisedButton type="submit" label="Create" primary />
+            <GridList
+              style={BetForm.gridListStyle}
+              cellHeight={'auto'}
+              cols={3}
+            >
+              <GridTile>
+                <Checkbox
+                  label="Private Bet"
+                  onCheck={this.updatePrivateBet.bind(this)}
+                />
+              </GridTile>
+              <Checkbox
+                  label="Create Arbiter"
+                  onCheck={this.updateNewArbiter.bind(this)}
+                />
+              <GridTile>
+                <RaisedButton type="submit" label="Create Bet" primary />
+              </GridTile>
+            </GridList>
           </form>
+          <this.ArbiterForm />
         </div>
       </div>
     )

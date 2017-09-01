@@ -15,7 +15,6 @@ import DoneIcon from 'material-ui/svg-icons/action/done';
 import WarningIcon from 'material-ui/svg-icons/alert/warning';
 import {red500, greenA200} from 'material-ui/styles/colors';
 
-import EthereumBlockies from 'ethereum-blockies';
 import Address from 'components/Address';
 
 import {
@@ -77,7 +76,7 @@ class Arbiters extends Component {
   }
   // TODO: This is bad practice, this should return something agnostic to react models
   static arbiters(networkId) {
-    if (networkId === null) return [ <MenuItem primaryText=''/> ]
+    if (networkId === null) return [ {} ]
 
     return _.reduce(ArbitersJson, (ourArbiters, networks, name) => {
       try {
