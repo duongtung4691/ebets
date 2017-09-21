@@ -286,13 +286,26 @@ class BetForm extends Component {
             <CardHeader
               title="New Arbiter"
             />
-            <CardText>
+              <CardText>
+                <GridList
+                  style={{flexWrap: 'nowrap', alignItems: 'stretch'}}
+                  cellHeight={'auto'}
+                >
+                  <GridTile>
+                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                      <TextField
+                        name="name"
+                        floatingLabelText="Name"
+                      />
+                    </div>
+                  </GridTile>
+                </GridList>
               <GridList
                 style={{flexWrap: 'nowrap', alignItems: 'stretch'}}
                 cellHeight={'auto'}
               >
                 <GridTile>
-                Members
+                  Members
                   <this.Members />
                 </GridTile>
                 <GridTile>

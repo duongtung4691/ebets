@@ -92,25 +92,25 @@ class NavDrawer extends Component {
           primaryText='Create bet'
           value='/new_bet'
           href='#/new_bet'
-          />
-          <ListItem 
-          primaryText='Arbiters'
-          value='/arbiters'
-          href='#/arbiters'
-          />
-          <Divider />
-          <ListItem
-            onTouchTap={() => {
-              this.props.onToggleUnfeatured(!this.state.showUnfeatured);
-              this.setState(previousState => ({showUnfeatured: !previousState.showUnfeatured}))}}
-          >
-          <Checkbox 
-            labelPosition='left'label='Unfeatured'
-            checkedIcon={ <Visibility /> }
-            uncheckedIcon={ <VisibilityOff /> }
-            checked={this.state.showUnfeatured}
-          />
-          </ListItem>
+        />
+        <ListItem 
+        primaryText='Arbiters'
+        value='/arbiters'
+        href='#/arbiters'
+        />
+        <Divider />
+        <ListItem
+          onTouchTap={() => {
+            this.props.onToggleUnfeatured(!this.state.showUnfeatured);
+            this.setState(previousState => ({showUnfeatured: !previousState.showUnfeatured}))}}
+        >
+        <Checkbox 
+          labelPosition='left'label='Unfeatured'
+          checkedIcon={ <Visibility /> }
+          uncheckedIcon={ <VisibilityOff /> }
+          checked={this.state.showUnfeatured}
+        />
+        </ListItem>
         <ListItem
           primaryText='All'
           value='/category/all_bets'
