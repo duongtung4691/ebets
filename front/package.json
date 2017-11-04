@@ -30,6 +30,7 @@
     "react-router": "^3.0.0",
     "react-scripts": "1.0.10",
     "react-tap-event-plugin": "^2.0.1",
+    "react-tooltip": "^3.4.0",
     "react-transition-group": "^2.1.0",
     "react-web3": "git+https://github.com/ethbets/react-web3.git",
     "reactstrap": "^4.8.0",

@@ -185,17 +185,18 @@ class Master extends Component {
       <div>
         <div style={{marginLeft: 210}}>
           <AppBar
-          onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton}
-          title={(errorMessage === null ) ? this.props.location.pathname : errorMessage}
-          zDepth={0}
-          style={styles.appBar}
-          showMenuIconButton={false}
-        />
+            onLeftIconButtonTouchTap={this.handleTouchTapLeftIconButton}
+            title={(errorMessage === null ) ? this.props.location.pathname : errorMessage}
+            zDepth={1}
+            style={styles.appBar}
+            showMenuIconButton={false}
+          />
           <div style={{marginTop: 73}}>
             {children}
           </div>
         </div>
         <NavDrawer
+        zDepth={2}
           style={styles.navDrawer}
           location={location}
           docked={true}

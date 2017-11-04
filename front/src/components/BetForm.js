@@ -17,6 +17,17 @@ import CircularProgress from 'material-ui/CircularProgress';
 import Checkbox from 'material-ui/Checkbox';
 import Chip from 'material-ui/Chip';
 
+import {
+  Table,
+  TableBody,
+  TableHeader,
+  TableHeaderColumn,
+  TableRow,
+  TableRowColumn,
+} from 'material-ui/Table';
+
+import ReactTooltip from 'react-tooltip'
+
 import Dialog from 'material-ui/Dialog';
 import {Card, CardHeader, CardText} from 'material-ui/Card';
 import {GridList, GridTile} from 'material-ui/GridList';
@@ -33,10 +44,11 @@ import versusIcon from 'assets/imgs/icons/vs.png';
 import AddIcon from 'material-ui/svg-icons/content/add';
 import {greenA200} from 'material-ui/styles/colors';
 
+import Address from 'components/Address';
+
 import Arbiters from './Arbiters';
 import {getParsedCategories} from 'utils/ebetsCategories';
 import _ from 'lodash';
-
 
 //TODO: put this in a configruation file
 const ARBITER_DEADLINE_PERIOD = 7
@@ -44,6 +56,11 @@ const SELF_DESTRUCT_DEADLINE_PERIOD = 14
 const NEW_ARBITER = '0x0000000000000000000000000000000000000000';
 
 class BetForm extends Component {
+  static tooltips = {
+    privateBet : "No fees, not listed in Ebets",
+    arbiters: "Arbiters decide bet's outcome",
+    arbiterMember: "Member account"
+  }
   static gridListStyle = {
     marginTop:10
   };
@@ -244,15 +261,14 @@ class BetForm extends Component {
         memberErrorMessage: 'Invalid address'
       };
     }
-    console.log(inputText);
     this.setState(newMemberState);
   }
 
   handleAddMember = () => {
     if (this.state.newMember) {
       this.setState(previousState => {
-        previousState.arbiterMembers.push(previousState.newMember);
-        return { newMember: null }
+        if (previousState.arbiterMembers.indexOf(previousState.newMember) == -1)
+          previousState.arbiterMembers.push(previousState.newMember);
       });
     }
   }
@@ -264,20 +280,33 @@ class BetForm extends Component {
         break;
       }
   }
-  Members = () => {
-    if (this.state.arbiterMembers.length === 0)
-      return null;
-    let arbiters = this.state.arbiterMembers.map(arbiterAddress => {
-      return <Chip
-        key={arbiterAddress}
-        onRequestDelete={this.handleDeleteMember(arbiterAddress)}
-        > 
-      {arbiterAddress}
-      </Chip>
-    });
-    return <div> {arbiters} </div>
-  }
 
+  Members = () => {
+    return <Table selectable={false}>
+    <TableHeader adjustForCheckbox={false} displaySelectAll={false}>
+      <TableRow>
+        <TableHeaderColumn>Address</TableHeaderColumn>
+        <TableHeaderColumn>Action</TableHeaderColumn>
+      </TableRow>
+    </TableHeader>
+    <TableBody displayRowCheckbox={false}>
+      {this.state.arbiterMembers.map(arbiterAddress => 
+        <TableRow key={arbiterAddress}>
+          <TableRowColumn><Address address={arbiterAddress}/></TableRowColumn>
+          <TableRowColumn>
+            <RaisedButton label="Remove" onClick={() => {
+              this.setState(previousState => {
+                previousState.arbiterMembers.splice(previousState.arbiterMembers.indexOf(arbiterAddress), 1);
+                return {arbiterMembers: previousState.arbiterMembers};
+              })
+            }} secondary />
+          </TableRowColumn>
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+  }
+  
   ArbiterForm = () => {
     if (this.state.newArbiter) {
       return (
@@ -286,51 +315,24 @@ class BetForm extends Component {
             <CardHeader
               title="New Arbiter"
             />
-              <CardText>
-                <GridList
-                  style={{flexWrap: 'nowrap', alignItems: 'stretch'}}
-                  cellHeight={'auto'}
-                >
-                  <GridTile>
-                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                      <TextField
-                        name="name"
-                        floatingLabelText="Name"
-                      />
-                    </div>
-                  </GridTile>
-                </GridList>
-              <GridList
-                style={{flexWrap: 'nowrap', alignItems: 'stretch'}}
-                cellHeight={'auto'}
-              >
-                <GridTile>
-                  Members
-                  <this.Members />
-                </GridTile>
-                <GridTile>
-                  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                    <TextField
-                      style={{width: 380}}
-                      name="members"
-                      value={(this.state.newMember === null) ? '' : this.state.newMember}
-                      floatingLabelText="New Member"
-                      onChange={this.handleNewArbiterMember}
-                      errorText={this.state.memberErrorMessage}
-                    />
-                    <RaisedButton label="Add" onClick={this.handleAddMember} primary />
-                  </div>
-                </GridTile>
-                <GridTile>
-                 
-                </GridTile>
-              </GridList>
-            </CardText>
-          </Card>
-        <RaisedButton type="submit" label="Create Arbiter" primary />
-      </form>
-      )
-    }
+            <CardText>
+            Members:
+            <this.Members />
+            <div>
+                  <TextField
+                    name="members"
+                    style={{width: 450}}
+                    floatingLabelText="New Member"
+                    onChange={this.handleNewArbiterMember}
+                    errorText={this.state.memberErrorMessage}
+                  />
+                  <RaisedButton label="Add" onClick={this.handleAddMember} primary />
+                </div>
+          </CardText>
+        </Card>
+      <RaisedButton type="submit" label="Create Arbiter" primary />
+    </form>
+    )}
     return null;
   }
 
@@ -473,14 +475,17 @@ class BetForm extends Component {
               cellHeight={'auto'}
               cols={3}
             >
-              <GridTile>
+              <GridTile>             
                 <Checkbox
                   label="Private Bet"
+                  data-tip={BetForm.tooltips.privateBet}
                   onCheck={this.updatePrivateBet.bind(this)}
                 />
+
               </GridTile>
               <Checkbox
                   label="Create Arbiter"
+                  data-tip={BetForm.tooltips.arbiters}
                   onCheck={this.updateNewArbiter.bind(this)}
                 />
               <GridTile>
@@ -490,6 +495,7 @@ class BetForm extends Component {
           </form>
           <this.ArbiterForm />
         </div>
+        <ReactTooltip place="top" offset={{'right': 20}} type="dark" effect="float"/>
       </div>
     )
   }
