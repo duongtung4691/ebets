@@ -9,7 +9,7 @@ pragma solidity ^0.4.11;
 import './governance.sol';
 
 contract StaticArbiter is Governance {
-  string public constant name = "Custom";
+  string public name;
   uint nMembers;
 
   modifier isActiveMember() {
@@ -22,10 +22,12 @@ contract StaticArbiter is Governance {
     _;
   }
 
-  function StaticArbiter(address[] _members) {
+  function StaticArbiter(string _name, address[] _members) {
+    name = _name;
     nMembers = _members.length;
-    for (uint i = 0; i < _members.length; ++i)
+    for (uint i = 0; i < _members.length; ++i) {
       members[_members[i]] = 1;
+    }
   }
 
   function isMember(address user) constant returns(bool member) {
@@ -75,8 +77,8 @@ contract StaticArbiter is Governance {
   }
 
   function addProposal(address proposalAddress, uint deadline) 
-    beforeDeadline(deadline) {
-
+    beforeDeadline(deadline)
+  {
     // Allow one proposal per bet
     require(proposals[proposalAddress].deadline == 0);
     proposals[proposalAddress].deadline = deadline;
