@@ -170,13 +170,13 @@ class Master extends Component {
     styles.root.paddingLeft = 256;
     styles.footer.paddingLeft = 256;
 
-    const web3Context = this.context.web3;
+    const web3Context = this.context.web3Utils;
     var errorMessage = null;
-    if (web3Context.networkId !== null && web3Context.networkId !== '42' && web3Context.networkId !== '3') {
+    if (web3Context.networkId !== null && web3Context.networkId !== 42 && web3Context.networkId !== 3) {
       errorMessage = <div> <WarningIcon color={red500}/> Ebets runs only in the Kovan or Ropsten networks, please switch to use the Dapp</div>;
       //this.props.router.push('');
     }
-    else if (web3Context.accounts.length === 0) {
+    else if (!web3Context.selectedAccount) {
       errorMessage = <div> <WarningIcon color={red500}/>
         Make sure you unlock or have at least one account in your wallet
       </div>;
@@ -210,7 +210,7 @@ class Master extends Component {
 }
 
 Master.contextTypes = {
-  web3: PropTypes.object
+  web3Utils: PropTypes.object
 };
 
 

@@ -901,7 +901,7 @@ class Bet extends Component {
       arbiterContractInstance: arbiterContractInstance,
       arbiterInfo: {
         name: arbiterName,
-        verified: Arbiters.isVerifiedArbiter(arbiterContractInstance.address, this.context.web3.networkId)
+        verified: Arbiters.isVerifiedArbiter(arbiterContractInstance.address, this.context.web3Utils.networkId)
       },
       betContractInstance: betContractInstance,
       showDetails: showDetails
@@ -1056,7 +1056,7 @@ class Bet extends Component {
 }
 
 Bet.contextTypes = {
-  web3: PropTypes.object
+  web3Utils: PropTypes.object
 };
 
 export default Bet;

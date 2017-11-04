@@ -11,6 +11,9 @@ const fs = require('fs');
 const MonarchyABI = JSON.parse(fs.readFileSync('./compiledContracts/Monarchy.abi'));
 const MonarchyBin = `0x${fs.readFileSync('./compiledContracts/Monarchy.bin').toString()}`
 
+const StaticArbiterABI = JSON.parse(fs.readFileSync('./compiledContracts/StaticArbiter.abi'));
+const StaticArbiterBin = `0x${fs.readFileSync('./compiledContracts/StaticArbiter.bin').toString()}`
+
 const BetABI = JSON.parse(fs.readFileSync('./compiledContracts/Bet.abi'));
 const BetBin = `0x${fs.readFileSync('./compiledContracts/Bet.bin').toString()}`
 
@@ -27,6 +30,7 @@ const SimpleToken2ABI = JSON.parse(fs.readFileSync('./compiledContracts/SimpleTo
 const SimpleToken2Bin = `0x${fs.readFileSync('./compiledContracts/SimpleToken2.bin').toString()}`
 
 var MonarchyJSON = require('../build/contracts/Monarchy.json');
+var StaticArbiterJSON = require('../build/contracts/StaticArbiter.json');
 var BetJSON = require('../build/contracts/Bet.json');
 var EbetsJSON = require('../build/contracts/Ebets.json');
 var ERC20JSON = require('../build/contracts/ERC20.json');
@@ -75,6 +79,11 @@ async function deployAll() {
     const monarchyAddress = await deployContract(MonarchyABI, MonarchyBin, deployAddress);
     writeBinABI('./build/contracts/Monarchy.json', MonarchyJSON, 
                 networkId, monarchyAddress, MonarchyABI, MonarchyBin, now);
+    console.log('Deployed');
+
+    console.log('Deploying Static Arbiter...');
+    writeBinABI('./build/contracts/StaticArbiter.json', StaticArbiterJSON, 
+                networkId, undefined, StaticArbiterABI, StaticArbiterBin, now);
     console.log('Deployed');
 
     console.log('Deploying Ebets...');

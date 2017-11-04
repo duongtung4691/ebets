@@ -6,6 +6,7 @@
 */
 
 /*global web3:true */
+/*global web3js:true */
 import moment from 'moment';
 import contract from 'truffle-contract'
 import React, { Component } from 'react';
@@ -262,26 +263,32 @@ class BetForm extends Component {
   }
 
   createStaticArbiterContract() {
-    console.log(web3.eth);
-    const staticArbiterContract = contract(StaticArbiterJson);
-    staticArbiterContract.setProvider(web3.currentProvider);
+    const staticArbiterContract = new web3js.eth.Contract(StaticArbiterJson.abi, {
+      data: StaticArbiterJson.bin,
+      from: this.context.web3Utils.selectedAccount,
+      gasPrice: 4*1e9,
+      gas: 4100000
+    });
+    console.log(StaticArbiterJson);
 
     //create contract
-    staticArbiterContract.new(
-      this.state.arbiterName,
-      this.state.arbiterMembers,
-      {
-        from: web3.eth.accounts[0],
-        gasPrice: 4*1e9
-      }
-    )
-    .then(arbiterAddress => {
-      console.log(arbiterAddress);
-    })
-    .catch((error) => {
+    staticArbiterContract.deploy({
+      arguments: [
+        this.state.arbiterName,
+        this.state.arbiterMembers
+      ]
+    }).send()
+    .on('error', (error) => {
       console.log('Error', error);
       this.setState({ alert: { type: 'danger', message: `Error: ${error.message}`, open: true } });
       this.setState({transactionInProcess: false});
+    })
+    .on('transactionHash', (txHash) => {console.log('Tx HASH:', txHash)})
+    .on('receipt', (receipt) => {
+       console.log('receipt:', receipt.contractAddress) // contains the new contract address
+    })
+    .then(arbiterAddress => {
+      console.log(arbiterAddress.options.address);
     })
   }
 
@@ -402,7 +409,7 @@ class BetForm extends Component {
                     </Dialog>
                   </div>
     }
-    let ourArbiters = Arbiters.arbiters(this.context.web3.networkId);
+    let ourArbiters = Arbiters.arbiters(this.context.web3Utils.networkId);
 
     return (
       <div style={BetForm.gridRootStyle}>
@@ -547,7 +554,7 @@ class BetForm extends Component {
   }
 }
 BetForm.contextTypes = {
-  web3: PropTypes.object
+  web3Utils: PropTypes.object
 };
 
 export default BetForm;
