@@ -38,6 +38,7 @@ import BigNumber from 'bignumber.js';
 
 import isAddress from 'utils/validateAddress';
 import EbetsJson from 'build/contracts/Ebets.json';
+import StaticArbiterJson from 'build/contracts/StaticArbiter.json'
 
 import betFields from 'utils/betFields';
 import versusIcon from 'assets/imgs/icons/vs.png';
@@ -74,6 +75,7 @@ class BetForm extends Component {
     super(props)
     this.state = {
       arbiterMembers: [],
+      arbiterName: '',
       alert: {
         open: false,
         type: 'info',
@@ -191,6 +193,22 @@ class BetForm extends Component {
     this.createContract()
   }
 
+  handleSubmitNewArbiter = event => {
+    event.preventDefault();
+    // TODO: Improve this
+    if(this.state.arbiterMembers.length === 0) {
+      this.setState({
+        alert: {
+          type: 'danger',
+          message: 'Error: Arbiter should have at least one member',
+          open: true 
+        }
+      });
+    }
+    this.createStaticArbiterContract();
+    // TODO: handle form validations
+  }
+
   handleAlert = () => {
     this.setState((prevState) => ({
       alert: {
@@ -243,6 +261,30 @@ class BetForm extends Component {
     })
   }
 
+  createStaticArbiterContract() {
+    console.log(web3.eth);
+    const staticArbiterContract = contract(StaticArbiterJson);
+    staticArbiterContract.setProvider(web3.currentProvider);
+
+    //create contract
+    staticArbiterContract.new(
+      this.state.arbiterName,
+      this.state.arbiterMembers,
+      {
+        from: web3.eth.accounts[0],
+        gasPrice: 4*1e9
+      }
+    )
+    .then(arbiterAddress => {
+      console.log(arbiterAddress);
+    })
+    .catch((error) => {
+      console.log('Error', error);
+      this.setState({ alert: { type: 'danger', message: `Error: ${error.message}`, open: true } });
+      this.setState({transactionInProcess: false});
+    })
+  }
+
   updatePrivateBet = (event, value) => {
     this.setState({isPrivate: value})
   }
@@ -251,7 +293,7 @@ class BetForm extends Component {
     this.setState({newArbiter: value})
   }
   
-  handleNewArbiterMember = (event, inputText) => {
+  handleNewMemberChange = (event, inputText) => {
     var newMemberState = {
       memberErrorMessage: null,
       newMember: inputText
@@ -262,6 +304,10 @@ class BetForm extends Component {
       };
     }
     this.setState(newMemberState);
+  }
+
+  handleNewArbiterName = (event, inputText) => {
+    this.setState({ arbiterName: inputText });
   }
 
   handleAddMember = () => {
@@ -310,24 +356,29 @@ class BetForm extends Component {
   ArbiterForm = () => {
     if (this.state.newArbiter) {
       return (
-        <form onSubmit={this.handleOnSubmit} >
+        <form onSubmit={this.handleSubmitNewArbiter} >
           <Card>
             <CardHeader
               title="New Arbiter"
             />
             <CardText>
+            <TextField
+                name="arbiterName"
+                floatingLabelText="Arbiter Name"
+                onChange={this.handleNewArbiterName}
+              />
             Members:
             <this.Members />
             <div>
-                  <TextField
-                    name="members"
-                    style={{width: 450}}
-                    floatingLabelText="New Member"
-                    onChange={this.handleNewArbiterMember}
-                    errorText={this.state.memberErrorMessage}
-                  />
-                  <RaisedButton label="Add" onClick={this.handleAddMember} primary />
-                </div>
+              <TextField
+                name="members"
+                style={{width: 450}}
+                floatingLabelText="New Member"
+                onChange={this.handleNewMemberChange}
+                errorText={this.state.memberErrorMessage}
+              />
+              <RaisedButton label="Add" onClick={this.handleAddMember} primary />
+            </div>
           </CardText>
         </Card>
       <RaisedButton type="submit" label="Create Arbiter" primary />
@@ -352,11 +403,6 @@ class BetForm extends Component {
                   </div>
     }
     let ourArbiters = Arbiters.arbiters(this.context.web3.networkId);
-    /*ourArbiters.push({key: <MenuItem
-      primaryText = {'New Arbiter'}
-      leftIcon = {<AddIcon color={greenA200} />}
-      />,
-      value:NEW_ARBITER});*/
 
     return (
       <div style={BetForm.gridRootStyle}>
