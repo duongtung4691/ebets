@@ -33,7 +33,7 @@ contract Bet is ProposalInterface {
     _;
   }
   modifier matchIsDecided() {
-    require(betState == BET_STATES.TEAM_ZERO_WON || 
+    require(betState == BET_STATES.TEAM_ZERO_WON ||
             betState == BET_STATES.TEAM_ONE_WON ||
             betState == BET_STATES.DRAW);
     _;

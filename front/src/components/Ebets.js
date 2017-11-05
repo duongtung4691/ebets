@@ -34,11 +34,12 @@ class Ebets extends Component {
       }
       else {
         betPromises = [{
-          bets: ebetsContractInstance.methods.getBetsByCategory(category).call(),
+          bets: ebetsContractInstance.methods.getBetsByCategory(category),
           category: category
         }];
       }
-      const bets = (await Promise.all(betPromises.map(betCat => (betCat.bets)))).reduce((before, bet, idx) => {
+      const bets = (await Promise.all(betPromises.map(betCat => (betCat.bets.call()))))
+      .reduce((before, bet, idx) => {
         return before.concat(bet.map(b => ({bet: b, category: betPromises[idx].category})));
       }, []);
       resolve(bets);
@@ -76,13 +77,13 @@ class Ebets extends Component {
       category += '/' + this.props.routeParams.subcategory;
     var bets = await this.getBetsByCategory(category, ebetsContract);
     //events
-    const betsEvents = ebetsContract.allEvents({fromBlock: 'latest', toBlock: 'latest'});
-    betsEvents.watch((error, response) => {
-      if (response.args.category === this.props.routeParams.category)
-        this.setState(previousState => ({bets: previousState.bets.concat(response.args.betAddr)}));
-    })
+    // const betsEvents = ebetsContract.allEvents({fromBlock: 'latest', toBlock: 'latest'});
+    // betsEvents.watch((error, response) => {
+    //   if (response.args.category === this.props.routeParams.category)
+    //     this.setState(previousState => ({bets: previousState.bets.concat(response.args.betAddr)}));
+    // })
     this.setState({
-      bets: bets,
+      bets,
       //betsEvents: betsEvents,
       ebetsContractInstance: ebetsContract
     });
