@@ -55,42 +55,42 @@ class BetController extends Component {
 
   componentWillMount() {
     if (this.props.isDetailed) {
-      var allBetEvents = this.props.betContractInstance.allEvents({
-      fromBlock: 0,
-      toBlock: 'latest'});
-      this.setState({allBetEvents: allBetEvents});
-      //this.setState({myBetsFilter: filter});
-      allBetEvents.watch((error, result) => {
-        if (result.event === 'NewBet') {
-          web3.eth.getBlock(result.blockNumber, (err, block) => {
-            this.setState(previousState => {
-              const newBet = {
-                from: result.args.from,
-                amount: result.args.amount,
-                forTeam: result.args.forTeam,
-                timestamp: block.timestamp
-              };
-              previousState.betList.push(newBet);
-              previousState.betList.sort((A, B) => A.timestamp < B.timestamp);
-            });
-          });
-        }
-        else if (result.event === 'NewBetERC20') {
-          web3.eth.getBlock(result.blockNumber, (err, block) => {
-            this.setState(previousState => {
-              const newBetERC20 = {
-                from: result.args.from,
-                amount: result.args.amount,
-                forTeam: result.args.forTeam,
-                erc20: result.args.erc20,
-                timestamp: block.timestamp
-              };
-              previousState.betList.push(newBetERC20);
-              previousState.betList.sort((A, B) => A.timestamp < B.timestamp);
-            });
-          });
-        }
-      });
+      // var allBetEvents = this.props.betContractInstance.events.allEvents({
+      // fromBlock: 0,
+      // toBlock: 'latest'});
+      // this.setState({allBetEvents: allBetEvents});
+      // //this.setState({myBetsFilter: filter});
+      // allBetEvents.watch((error, result) => {
+      //   if (result.event === 'NewBet') {
+      //     web3.eth.getBlock(result.blockNumber, (err, block) => {
+      //       this.setState(previousState => {
+      //         const newBet = {
+      //           from: result.args.from,
+      //           amount: result.args.amount,
+      //           forTeam: result.args.forTeam,
+      //           timestamp: block.timestamp
+      //         };
+      //         previousState.betList.push(newBet);
+      //         previousState.betList.sort((A, B) => A.timestamp < B.timestamp);
+      //       });
+      //     });
+      //   }
+      //   else if (result.event === 'NewBetERC20') {
+      //     web3.eth.getBlock(result.blockNumber, (err, block) => {
+      //       this.setState(previousState => {
+      //         const newBetERC20 = {
+      //           from: result.args.from,
+      //           amount: result.args.amount,
+      //           forTeam: result.args.forTeam,
+      //           erc20: result.args.erc20,
+      //           timestamp: block.timestamp
+      //         };
+      //         previousState.betList.push(newBetERC20);
+      //         previousState.betList.sort((A, B) => A.timestamp < B.timestamp);
+      //       });
+      //     });
+      //   }
+      // });
     }
   }
   componentWillUnmount() {

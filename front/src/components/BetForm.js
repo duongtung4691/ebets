@@ -7,8 +7,8 @@
 
 /*global web3:true */
 /*global web3js:true */
+
 import moment from 'moment';
-import contract from 'truffle-contract'
 import React, { Component } from 'react';
 import RaisedButton from 'material-ui/RaisedButton';
 import TextField from 'material-ui/TextField';
@@ -16,7 +16,6 @@ import DateTimePicker from './DateTimePicker';
 import PropTypes from 'prop-types';
 import CircularProgress from 'material-ui/CircularProgress';
 import Checkbox from 'material-ui/Checkbox';
-import Chip from 'material-ui/Chip';
 
 import {
   Table,
@@ -43,19 +42,17 @@ import StaticArbiterJson from 'build/contracts/StaticArbiter.json'
 
 import betFields from 'utils/betFields';
 import versusIcon from 'assets/imgs/icons/vs.png';
-import AddIcon from 'material-ui/svg-icons/content/add';
-import {greenA200} from 'material-ui/styles/colors';
 
 import Address from 'components/Address';
 
 import Arbiters from './Arbiters';
 import {getParsedCategories} from 'utils/ebetsCategories';
-import _ from 'lodash';
+
+import { deployContract, createBet } from 'utils/contractHelpers';
 
 //TODO: put this in a configruation file
 const ARBITER_DEADLINE_PERIOD = 7
 const SELF_DESTRUCT_DEADLINE_PERIOD = 14
-const NEW_ARBITER = '0x0000000000000000000000000000000000000000';
 
 class BetForm extends Component {
   static tooltips = {
@@ -76,7 +73,9 @@ class BetForm extends Component {
     super(props)
     this.state = {
       arbiterMembers: [],
-      arbiterName: '',
+      arbiterName: '', // Used in form
+      newArbiterName: '', // Get from new arbiter
+      customArbiterAddress: null,
       alert: {
         open: false,
         type: 'info',
@@ -86,12 +85,6 @@ class BetForm extends Component {
       ...betFields
     }
   }
-
-  CircularProgressCustom = () => {
-    if (this.state.transactionInProcess)
-      return <CircularProgress size={50} thickness={4} />;
-    return <img src={versusIcon} />;
-  };
 
   validateDateRange = (selectedField, selectedDate, limitField, limitDate) => {
     if (selectedDate < limitDate) {
@@ -191,7 +184,7 @@ class BetForm extends Component {
       this.setState({ alert: { type: 'danger', message: `Error: Invalid Arbiter Address ${this.state.selectedArbiter}`, open: true } });
     }
     // TODO: handle form validations
-    this.createContract()
+    this.createBetContract()
   }
 
   handleSubmitNewArbiter = event => {
@@ -222,82 +215,78 @@ class BetForm extends Component {
     this.initializeTimestamps();
   }
 
-  createContract() {
-    const ebetsContract = contract(EbetsJson);
-    ebetsContract.setProvider(web3.currentProvider);
+  async createBetContract() {
+    const timestamps = [
+      new BigNumber(moment(this.state.timestampMatchBegin).unix()),
+      new BigNumber(moment(this.state.timestampMatchEnd).unix()),
+      new BigNumber(moment(this.state.timestampArbiterDeadline).unix()),
+      new BigNumber(moment(this.state.timestampSelfDestructDeadline).unix())
+    ];
 
-    //create contract
-    ebetsContract.deployed().then(instance => {
-      if (this.state.arbiterErrorMessage !== null)
-        return new Promise((resolve, reject) => {reject({message: 'Invalid Arbiter'})});
-
-      const timestamps = [
-        new BigNumber(moment(this.state.timestampMatchBegin).unix()),
-        new BigNumber(moment(this.state.timestampMatchEnd).unix()),
-        new BigNumber(moment(this.state.timestampArbiterDeadline).unix()),
-        new BigNumber(moment(this.state.timestampSelfDestructDeadline).unix())
-      ];
-
-      let createdBet = instance.createBet(
-        this.state.selectedArbiter,
-        this.state.team0Name,
-        this.state.team1Name,
-        this.state.category,
-        timestamps,
-        /* TODO: accounts[0] can be changed by the user,
-         * There should be a way so when the user changes, this is updated too.
-         */
-        {from: web3.eth.accounts[0]}
-        );
-      this.setState({transactionInProcess: true});
-      return createdBet;
+    const { contract, gas } = await createBet(EbetsJson, [
+      this.state.selectedArbiter,
+      this.state.team0Name,
+      this.state.team1Name,
+      this.state.category,
+      timestamps
+    ], this.context.web3Utils.selectedAccount, this.context.web3Utils.networkId)
+    contract.send({ gas })
+    .once('transactionHash', (txHash) => {
+      this.setState({ alert: { type: 'info', message: `Created transaction with hash: ${txHash}\
+      Waiting for confirmation`, open: true }, transactionInProcess: true });
     })
-    .then(response => {
-      this.props.router.push('/bet/' + response.logs[0].args.betAddr);
-    })
-    .catch((error) => {
+    .once('error', (error) => {
       console.log('Error', error);
-      this.setState({ alert: { type: 'danger', message: `Error: ${error.message}`, open: true } });
-      this.setState({transactionInProcess: false});
+      this.setState({ alert: { type: 'danger', message: `Error: ${error.message}\
+      `, open: true }, transactionInProcess: true });
+    })
+    .then(receipt => {
+      this.setState({ transactionInProcess: false });
+      this.props.router.push('/bet/' + receipt.events.createdBet.returnValues['0']);
     })
   }
 
-  createStaticArbiterContract() {
-    const staticArbiterContract = new web3js.eth.Contract(StaticArbiterJson.abi, {
-      data: StaticArbiterJson.bin,
-      from: this.context.web3Utils.selectedAccount,
-      gasPrice: 4*1e9,
-      gas: 4100000
-    });
-    console.log(StaticArbiterJson);
-
+  async createStaticArbiterContract() {
     //create contract
-    staticArbiterContract.deploy({
-      arguments: [
-        this.state.arbiterName,
-        this.state.arbiterMembers
-      ]
-    }).send()
-    .on('error', (error) => {
+    const { contract, gas } = await deployContract(StaticArbiterJson, [
+      this.state.arbiterName,
+      this.state.arbiterMembers
+    ], this.context.web3Utils.selectedAccount)
+    contract.send({ gas })
+    .once('transactionHash', (txHash) => {
+      this.setState({ alert: { type: 'info', message: `Created transaction with hash: ${txHash}\
+      Waiting for confirmation`, open: true }, transactionInProcess: true });
+    })
+    .once('receipt', (receipt) => {
+      this.setState({ alert: { type: 'info', message: `Got receipt,\
+      contract address: ${receipt.contractAddress}`, open: true }, transactionInProcess: true });
+    })
+    .once('error', (error) => {
       console.log('Error', error);
-      this.setState({ alert: { type: 'danger', message: `Error: ${error.message}`, open: true } });
-      this.setState({transactionInProcess: false});
+      this.setState({ alert: { type: 'danger', message: `Error: ${error.message}\
+      `, open: true }, transactionInProcess: true });
     })
-    .on('transactionHash', (txHash) => {console.log('Tx HASH:', txHash)})
-    .on('receipt', (receipt) => {
-       console.log('receipt:', receipt.contractAddress) // contains the new contract address
+    .then(arbiterContract => {
+      this.setState({
+        transactionInProcess: false,
+        customArbiterAddress: arbiterContract.options.address,
+        selectedArbiter: arbiterContract.options.address 
+      });
+      return arbiterContract.methods.name().call();
     })
-    .then(arbiterAddress => {
-      console.log(arbiterAddress.options.address);
-    })
+    .then(name => {
+      this.setState({
+        newArbiterName: name
+      })
+    });
   }
 
   updatePrivateBet = (event, value) => {
-    this.setState({isPrivate: value})
+    this.setState({ isPrivate: value })
   }
 
   updateNewArbiter = (event, value) => {
-    this.setState({newArbiter: value})
+    this.setState({ newArbiter: value })
   }
   
   handleNewMemberChange = (event, inputText) => {
@@ -395,21 +384,47 @@ class BetForm extends Component {
   }
 
   render() {
+    let ourArbiters = Arbiters.arbiters(this.context.web3Utils.networkId);
+    if (this.state.customArbiterAddress) {
+      ourArbiters.push({
+        key: (
+          Address.getArbiterMenuList(this.state.customArbiterAddress, 
+            (this.state.newArbiterName === '') ? 
+            this.state.customArbiterAddress.substr(0, 10) + '...' : 
+            this.state.newArbiterName, 0)
+        ),
+        value: this.state.customArbiterAddress
+    })
+    }
+
     if (this.state.alert.type && this.state.alert.message) {
       // TODO apply layouts
       // TODO: fix this
+      const actions = [
+        <RaisedButton key='cancel'
+          label='OK'
+          primary={false}
+          onClick={this.handleAlert}
+        />,
+      ];
       var classString = 'bg-' + this.state.alert.type;
       var status = <div id="status" className={classString}>
                     <Dialog
-                      modal={false}
+                      modal={true}
+                      actions={actions}
                       open={this.state.alert.open}
-                      onRequestClose={this.handleAlert}
                     >
                       {this.state.alert.message}
+                      <br/>
+                      <center>
+                      { (this.state.transactionInProcess) ? 
+                        <CircularProgress size={50} thickness={4} /> :
+                        null
+                      }
+                      </center>
                     </Dialog>
                   </div>
     }
-    let ourArbiters = Arbiters.arbiters(this.context.web3Utils.networkId);
 
     return (
       <div style={BetForm.gridRootStyle}>
@@ -434,7 +449,7 @@ class BetForm extends Component {
                 <GridTile
                   style={{width: 54, height: 54, marginLeft: 'auto', marginRight: 'auto'}}
                 >
-                <this.CircularProgressCustom />
+                <img src={versusIcon} />
                 </GridTile>
                 <GridTile>
                   <TextField
