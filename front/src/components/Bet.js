@@ -777,10 +777,8 @@ class Bet extends Component {
       betAddress = this.props.address;
     
     const betContract = new web3js.eth.Contract(BetJson.abi, betAddress); 
-    betContract.methods.arbiter().call(console.log);
     const governanceAddress = await betContract.methods.arbiter().call();
     console.log('FINE', governanceAddress)
-    
     const arbiterContract = new web3js.eth.Contract(GovernanceInterfaceJson.abi, governanceAddress);
 
     var stateObjects = await setAttributes(this.state, betContract);
@@ -798,16 +796,16 @@ class Bet extends Component {
     var _ERC20Team1BetSum = {};
     var _ERC20HasBetOnTeam = {};
     
-    if (account !== undefined) {
-      isArbiter = await arbiterContract.methods.isMember(account).call();
-      betsToTeam0 = await betContract.methods.betsToTeam0(account).call();
-      betsToTeam1 = await betContract.methods.betsToTeam1(account).call();
-    }
-    else {
-      betsToTeam0 = new BigNumber(0);
-      betsToTeam1 = new BigNumber(0);
-    }
-    
+    try {
+      if (account !== undefined) {
+        isArbiter = await arbiterContract.methods.isMember(account).call();
+        betsToTeam0 = await betContract.methods.betsToTeam0(account).call();
+        betsToTeam1 = await betContract.methods.betsToTeam1(account).call();
+      }
+      else {
+        betsToTeam0 = new BigNumber(0);
+        betsToTeam1 = new BigNumber(0);
+      }
 
     var _TAX = stateObjects['TAX'] / 100;
 
@@ -904,6 +902,11 @@ class Bet extends Component {
       betContractInstance: betContract,
       showDetails: showDetails
     });
+  }
+  catch(err) {
+    console.error('Bet malformed');
+    this.setState({loadCompleted: true});
+  }
     // Only watch new events
     
     // var laterEvents = betContract.allEvents({
