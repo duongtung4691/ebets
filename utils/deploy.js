@@ -81,12 +81,6 @@ async function deployAll() {
                 networkId, monarchyAddress, MonarchyABI, MonarchyBin, now);
     console.log('Deployed');
 
-    console.log('Deploying Static Arbiter...');
-    writeBinABI('./build/contracts/StaticArbiter.json', StaticArbiterJSON, 
-                networkId, undefined, StaticArbiterABI, StaticArbiterBin, now);
-    console.log('Deployed');
-
-    console.log('Deploying Ebets...');
     const ebetsAddress = await deployContract(EbetsABI, EbetsBin, deployAddress);
     writeBinABI('./build/contracts/Ebets.json', EbetsJSON, 
                 networkId, ebetsAddress, EbetsABI, EbetsBin, now);

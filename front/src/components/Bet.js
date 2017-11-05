@@ -181,7 +181,7 @@ class Bet extends Component {
       value = value.times(new BigNumber(1e18));
       const betPromise = this.state.betContractInstance.bet(
         teamToBet,
-        { from: this.context.web3.web3.eth.defaultAccount,
+        { from: this.context.web3Utils.selectedAccount,
           value: value
         });
       this.transactionHappened(betPromise)
@@ -722,22 +722,18 @@ class Bet extends Component {
     return new Promise((resolve, reject) => {
       if (address in this.state.erc20Contracts)
         resolve();
-      console.log(this.context)
-      const erc20Contract = new web3js.Contract(ERC20Json);
-      erc20Contract.setProvider(this.context.web3.web3.currentProvider);
-      var erc20Instance = erc20Contract.at(address);
+      const erc20Contract = new web3js.eth.Contract(ERC20Json.abi, address);
 
       var _erc20Contracts = _.clone(this.state.erc20Contracts);
       var promises = [];
-      erc20Instance.then(() => {
-        for (var erc20_field in ERC20Fields)
-          promises.push({field: erc20_field, promise: erc20Instance[erc20_field]()});
-        return Promise.all(promises.map(this.reflectERC20Fields));
-      })
+      for (var erc20_field in ERC20Fields)
+        promises.push({field: erc20_field, promise: erc20Contract.methods[erc20_field]().call()});
+
+      Promise.all(promises.map(this.reflectERC20Fields))
       .then((results) => {
         var success = results.filter(x => x.status === 'resolved');
         var _erc20Contracts = _.clone(this.state.erc20Contracts);
-        _erc20Contracts[address] = {instance: erc20Instance, decimals: new BigNumber(0), name: address, symbol: ''};
+        _erc20Contracts[address] = {instance: erc20Contract, decimals: new BigNumber(0), name: address, symbol: ''};
         for (var idx in success) {
           var field = success[idx];
           _erc20Contracts[address][field.f] = field.v;
@@ -779,10 +775,10 @@ class Bet extends Component {
     }
     else
       betAddress = this.props.address;
-
-    const betContract = new web3js.eth.Contract(BetJson.abi, betAddress);
+    
+    const betContract = new web3js.eth.Contract(BetJson.abi, betAddress); 
     const governanceAddress = await betContract.methods.arbiter().call();
-
+    console.log('FINE', governanceAddress)
     const arbiterContract = new web3js.eth.Contract(GovernanceInterfaceJson.abi, governanceAddress);
 
     var stateObjects = await setAttributes(this.state, betContract);
@@ -799,17 +795,17 @@ class Bet extends Component {
     var _ERC20Team0BetSum = {};
     var _ERC20Team1BetSum = {};
     var _ERC20HasBetOnTeam = {};
-
-    if (account !== undefined) {
-      isArbiter = await arbiterContract.methods.isMember(account).call();
-      betsToTeam0 = await betContract.methods.betsToTeam0(account).call();
-      betsToTeam1 = await betContract.methods.betsToTeam1(account).call();
-    }
-    else {
-      betsToTeam0 = new BigNumber(0);
-      betsToTeam1 = new BigNumber(0);
-    }
-    console.log(stateObjects);
+    
+    try {
+      if (account !== undefined) {
+        isArbiter = await arbiterContract.methods.isMember(account).call();
+        betsToTeam0 = await betContract.methods.betsToTeam0(account).call();
+        betsToTeam1 = await betContract.methods.betsToTeam1(account).call();
+      }
+      else {
+        betsToTeam0 = new BigNumber(0);
+        betsToTeam1 = new BigNumber(0);
+      }
 
     var _TAX = stateObjects['TAX'] / 100;
 
@@ -837,7 +833,7 @@ class Bet extends Component {
         console.log('Error: ' + e);
       }
 
-      if (this.context.web3.web3.eth.defaultAccount !== undefined ) {
+      if (this.context.web3Utils.selectedAccount !== undefined ) {
         try {
           var bets0 = await betContract.methods.ERC20BetsToTeam0(_valid, account).call();
           var bets1 = await betContract.methods.ERC20BetsToTeam1(_valid, account).call();
@@ -906,6 +902,11 @@ class Bet extends Component {
       betContractInstance: betContract,
       showDetails: showDetails
     });
+  }
+  catch(err) {
+    console.error('Bet malformed');
+    this.setState({loadCompleted: true});
+  }
     // Only watch new events
     
     // var laterEvents = betContract.allEvents({
