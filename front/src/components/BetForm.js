@@ -4,8 +4,6 @@
  * This software may be modified and distributed under the terms
  * of the BSD license. See the LICENSE file for details.
 */
-
-/*global web3:true */
 /*global web3js:true */
 
 import moment from 'moment';
@@ -16,15 +14,6 @@ import DateTimePicker from './DateTimePicker';
 import PropTypes from 'prop-types';
 import CircularProgress from 'material-ui/CircularProgress';
 import Checkbox from 'material-ui/Checkbox';
-
-import {
-  Table,
-  TableBody,
-  TableHeader,
-  TableHeaderColumn,
-  TableRow,
-  TableRowColumn,
-} from 'material-ui/Table';
 
 import ReactTooltip from 'react-tooltip'
 
@@ -44,8 +33,9 @@ import betFields from 'utils/betFields';
 import versusIcon from 'assets/imgs/icons/vs.png';
 
 import Address from 'components/Address';
+import Arbiters from 'components/Arbiters';
+import ArbiterForm from 'components/ArbiterForm';
 
-import Arbiters from './Arbiters';
 import {getParsedCategories} from 'utils/ebetsCategories';
 
 import { deployContract, createBet } from 'utils/contractHelpers';
@@ -72,10 +62,9 @@ class BetForm extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      arbiterMembers: [],
-      arbiterName: '', // Used in form
-      newArbiterName: '', // Get from new arbiter
+      arbiterName: '', // Get from new arbiter
       customArbiterAddress: null,
+      toggleNewArbiter: false,
       alert: {
         open: false,
         type: 'info',
@@ -133,10 +122,6 @@ class BetForm extends Component {
     if (index !== -1) {
       this.setState({ selectedArbiter: selectedItem.value });
     }
-    // TODO: this will not be static method
-    // else {
-    //   Arbiters.addUnverifiedArbiter(selectedItem)
-    // }
   }
 
   handleCategoryChange = (event, index, value) => {
@@ -187,22 +172,6 @@ class BetForm extends Component {
     this.createBetContract()
   }
 
-  handleSubmitNewArbiter = event => {
-    event.preventDefault();
-    // TODO: Improve this
-    if(this.state.arbiterMembers.length === 0) {
-      this.setState({
-        alert: {
-          type: 'danger',
-          message: 'Error: Arbiter should have at least one member',
-          open: true 
-        }
-      });
-    }
-    this.createStaticArbiterContract();
-    // TODO: handle form validations
-  }
-
   handleAlert = () => {
     this.setState((prevState) => ({
       alert: {
@@ -246,11 +215,11 @@ class BetForm extends Component {
     })
   }
 
-  async createStaticArbiterContract() {
+  async handleCreateStaticArbiterContract(arbiterName, members) {
     //create contract
     const { contract, gas } = await deployContract(StaticArbiterJson, [
-      this.state.arbiterName,
-      this.state.arbiterMembers
+      arbiterName,
+      members
     ], this.context.web3Utils.selectedAccount)
     contract.send({ gas })
     .once('transactionHash', (txHash) => {
@@ -276,7 +245,7 @@ class BetForm extends Component {
     })
     .then(name => {
       this.setState({
-        newArbiterName: name
+        arbiterName: name
       })
     });
   }
@@ -285,102 +254,8 @@ class BetForm extends Component {
     this.setState({ isPrivate: value })
   }
 
-  updateNewArbiter = (event, value) => {
-    this.setState({ newArbiter: value })
-  }
-  
-  handleNewMemberChange = (event, inputText) => {
-    var newMemberState = {
-      memberErrorMessage: null,
-      newMember: inputText
-    };
-    if(!isAddress(inputText)) {
-      newMemberState = {
-        memberErrorMessage: 'Invalid address'
-      };
-    }
-    this.setState(newMemberState);
-  }
-
-  handleNewArbiterName = (event, inputText) => {
-    this.setState({ arbiterName: inputText });
-  }
-
-  handleAddMember = () => {
-    if (this.state.newMember) {
-      this.setState(previousState => {
-        if (previousState.arbiterMembers.indexOf(previousState.newMember) == -1)
-          previousState.arbiterMembers.push(previousState.newMember);
-      });
-    }
-  }
-
-  handleDeleteMember = (address) => () => {
-    for (let idx in this.state.arbiterMembers)
-      if (this.state.arbiterMembers[idx] === address) {
-        this.setState(previousState => {previousState.arbiterMembers.splice(idx, 1);})
-        break;
-      }
-  }
-
-  Members = () => {
-    return <Table selectable={false}>
-    <TableHeader adjustForCheckbox={false} displaySelectAll={false}>
-      <TableRow>
-        <TableHeaderColumn>Address</TableHeaderColumn>
-        <TableHeaderColumn>Action</TableHeaderColumn>
-      </TableRow>
-    </TableHeader>
-    <TableBody displayRowCheckbox={false}>
-      {this.state.arbiterMembers.map(arbiterAddress => 
-        <TableRow key={arbiterAddress}>
-          <TableRowColumn><Address address={arbiterAddress}/></TableRowColumn>
-          <TableRowColumn>
-            <RaisedButton label="Remove" onClick={() => {
-              this.setState(previousState => {
-                previousState.arbiterMembers.splice(previousState.arbiterMembers.indexOf(arbiterAddress), 1);
-                return {arbiterMembers: previousState.arbiterMembers};
-              })
-            }} secondary />
-          </TableRowColumn>
-        </TableRow>
-      )}
-    </TableBody>
-  </Table>
-  }
-  
-  ArbiterForm = () => {
-    if (this.state.newArbiter) {
-      return (
-        <form onSubmit={this.handleSubmitNewArbiter} >
-          <Card>
-            <CardHeader
-              title="New Arbiter"
-            />
-            <CardText>
-            <TextField
-                name="arbiterName"
-                floatingLabelText="Arbiter Name"
-                onChange={this.handleNewArbiterName}
-              />
-            Members:
-            <this.Members />
-            <div>
-              <TextField
-                name="members"
-                style={{width: 450}}
-                floatingLabelText="New Member"
-                onChange={this.handleNewMemberChange}
-                errorText={this.state.memberErrorMessage}
-              />
-              <RaisedButton label="Add" onClick={this.handleAddMember} primary />
-            </div>
-          </CardText>
-        </Card>
-      <RaisedButton type="submit" label="Create Arbiter" primary />
-    </form>
-    )}
-    return null;
+  toggleNewArbiterForm = () => {
+    this.setState({toggleNewArbiter: !this.state.toggleNewArbiter});
   }
 
   render() {
@@ -389,9 +264,9 @@ class BetForm extends Component {
       ourArbiters.push({
         key: (
           Address.getArbiterMenuList(this.state.customArbiterAddress, 
-            (this.state.newArbiterName === '') ? 
+            (this.state.arbiterName === '') ?
             this.state.customArbiterAddress.substr(0, 10) + '...' : 
-            this.state.newArbiterName, 0)
+            this.state.arbiterName, 0)
         ),
         value: this.state.customArbiterAddress
     })
@@ -417,7 +292,7 @@ class BetForm extends Component {
                       {this.state.alert.message}
                       <br/>
                       <center>
-                      { (this.state.transactionInProcess) ? 
+                      { (this.state.transactionInProcess) ?
                         <CircularProgress size={50} thickness={4} /> :
                         null
                       }
@@ -554,14 +429,16 @@ class BetForm extends Component {
               <Checkbox
                   label="Create Arbiter"
                   data-tip={BetForm.tooltips.arbiters}
-                  onCheck={this.updateNewArbiter.bind(this)}
+                  onCheck={this.toggleNewArbiterForm}
                 />
               <GridTile>
                 <RaisedButton type="submit" label="Create Bet" primary />
               </GridTile>
             </GridList>
           </form>
-          <this.ArbiterForm />
+          { this.state.toggleNewArbiter &&
+            <ArbiterForm createStaticArbiterContract={this.handleCreateStaticArbiterContract.bind(this)} toggleFormDisplay={this.toggleNewArbiterForm.bind(this)} />
+          }
         </div>
         <ReactTooltip place="top" offset={{'right': 20}} type="dark" effect="float"/>
       </div>
