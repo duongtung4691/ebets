@@ -6,7 +6,6 @@
 */
 /*global web3js:true */
 
-import lodash from 'lodash';
 import _ from 'lodash';
 import moment from 'moment';
 
@@ -639,7 +638,7 @@ class Bet extends Component {
       return (
         <Card
           // FIXME: when corrected https://github.com/callemall/material-ui/issues/7411
-          onExpandChange={lodash.debounce(this.onExpand, 150)}
+          onExpandChange={_.debounce(this.onExpand, 150)}
           expanded={(this.props.isDetailed) ? true : this.state.isExpanded}
         >
         <CardHeader
