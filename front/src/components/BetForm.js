@@ -27,6 +27,7 @@ import BigNumber from 'bignumber.js';
 
 import isAddress from 'utils/validateAddress';
 import EbetsJson from 'build/contracts/Ebets.json';
+import BetJson from 'build/contracts/Bet.json';
 import StaticArbiterJson from 'build/contracts/StaticArbiter.json'
 
 import betFields from 'utils/betFields';
@@ -43,6 +44,7 @@ import { deployContract, createBet } from 'utils/contractHelpers';
 //TODO: put this in a configruation file
 const ARBITER_DEADLINE_PERIOD = 7
 const SELF_DESTRUCT_DEADLINE_PERIOD = 14
+const TAX = 10
 
 class BetForm extends Component {
   static tooltips = {
@@ -169,7 +171,11 @@ class BetForm extends Component {
       this.setState({ alert: { type: 'danger', message: `Error: Invalid Arbiter Address ${this.state.selectedArbiter}`, open: true } });
     }
     // TODO: handle form validations
-    this.createBetContract()
+    if(this.state.isPrivate) {
+      this.createPrivateBetContract()
+    } else {
+      this.createBetContract()
+    }
   }
 
   handleAlert = () => {
@@ -181,16 +187,49 @@ class BetForm extends Component {
   };
 
   componentWillMount() {
+    this.setState({ isPrivate: false });
     this.initializeTimestamps();
   }
 
-  async createBetContract() {
-    const timestamps = [
+  normalizedTimestamps() {
+    return [
       new BigNumber(moment(this.state.timestampMatchBegin).unix()),
       new BigNumber(moment(this.state.timestampMatchEnd).unix()),
       new BigNumber(moment(this.state.timestampArbiterDeadline).unix()),
       new BigNumber(moment(this.state.timestampSelfDestructDeadline).unix())
     ];
+  }
+
+  async createPrivateBetContract() {
+    const timestamps = this.normalizedTimestamps();
+    const { contract, gas } = await deployContract(BetJson, [
+      this.state.selectedArbiter,
+      this.state.team0Name,
+      this.state.team1Name,
+      timestamps,
+      TAX
+    ], this.context.web3Utils.selectedAccount)
+    contract.send({ gas })
+    .once('transactionHash', (txHash) => {
+      this.setState({ alert: { type: 'info', message: `Created transaction with hash: ${txHash}\
+      Waiting for confirmation`, open: true }, transactionInProcess: true });
+    })
+    .once('receipt', (receipt) => {
+      this.setState({ alert: { type: 'info', message: `Got receipt,\
+      contract address: ${receipt.contractAddress}`, open: true }, transactionInProcess: true });
+    })
+    .once('error', (error) => {
+      this.setState({ alert: { type: 'danger', message: `Error: ${error.message}\
+      `, open: true }, transactionInProcess: true });
+    })
+    .then(receipt => {
+      this.setState({ transactionInProcess: false });
+      this.props.router.push('/category/all_bets');
+    });
+  }
+
+  async createBetContract() {
+    const timestamps = this.normalizedTimestamps();
 
     const { contract, gas } = await createBet(EbetsJson, [
       this.state.selectedArbiter,
@@ -205,7 +244,6 @@ class BetForm extends Component {
       Waiting for confirmation`, open: true }, transactionInProcess: true });
     })
     .once('error', (error) => {
-      console.log('Error', error);
       this.setState({ alert: { type: 'danger', message: `Error: ${error.message}\
       `, open: true }, transactionInProcess: true });
     })
@@ -231,7 +269,6 @@ class BetForm extends Component {
       contract address: ${receipt.contractAddress}`, open: true }, transactionInProcess: true });
     })
     .once('error', (error) => {
-      console.log('Error', error);
       this.setState({ alert: { type: 'danger', message: `Error: ${error.message}\
       `, open: true }, transactionInProcess: true });
     })
@@ -427,11 +464,11 @@ class BetForm extends Component {
 
               </GridTile>
               <Checkbox
-                  label="Create Arbiter"
+                  label="Create Custom Arbiter"
                   data-tip={BetForm.tooltips.arbiters}
                   onCheck={this.toggleNewArbiterForm}
                 />
-              <GridTile>
+              <GridTile style={{ float: 'right' }}>
                 <RaisedButton type="submit" label="Create Bet" primary />
               </GridTile>
             </GridList>
