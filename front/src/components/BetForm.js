@@ -284,6 +284,7 @@ class BetForm extends Component {
       this.setState({
         arbiterName: name
       })
+      this.toggleNewArbiterForm();
     });
   }
 
@@ -474,7 +475,7 @@ class BetForm extends Component {
             </GridList>
           </form>
           { this.state.toggleNewArbiter &&
-            <ArbiterForm createStaticArbiterContract={this.handleCreateStaticArbiterContract.bind(this)} toggleFormDisplay={this.toggleNewArbiterForm.bind(this)} />
+            <ArbiterForm createStaticArbiterContract={this.handleCreateStaticArbiterContract.bind(this)} />
           }
         </div>
         <ReactTooltip place="top" offset={{'right': 20}} type="dark" effect="float"/>

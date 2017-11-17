@@ -17,7 +17,7 @@ import {
 } from 'material-ui/Table';
 import RaisedButton from 'material-ui/RaisedButton';
 import TextField from 'material-ui/TextField';
-import {Card, CardHeader, CardText} from 'material-ui/Card';
+import {Card, CardHeader, CardText, CardActions} from 'material-ui/Card';
 
 import Address from 'components/Address';
 import isAddress from 'utils/validateAddress';
@@ -58,7 +58,6 @@ class ArbiterForm extends Component {
       });
     }
     this.props.createStaticArbiterContract(this.state.name, this.state.members);
-    this.props.toggleFormDisplay()
     // TODO: handle form validations
   }
   
@@ -98,8 +97,7 @@ class ArbiterForm extends Component {
 
   Members = () => {
     return (
-      
-      <Table selectable={false}>
+      <Table style={{tableLayout: 'auto'}} fixedHeader={false} selectable={false} >
         <TableHeader adjustForCheckbox={false} displaySelectAll={false}>
           <TableRow>
             <TableHeaderColumn>Address</TableHeaderColumn>
@@ -133,13 +131,11 @@ class ArbiterForm extends Component {
             <CardHeader title="New Arbiter" />
             <CardText>
               <TextField
-                  name="name"
-                  floatingLabelText="Arbiter Name"
-                  onChange={this.handleArbiterName}
-                />
-              Members:
-              <this.Members />
-              <div>
+                name="name"
+                floatingLabelText="Arbiter Name"
+                onChange={this.handleArbiterName}
+              />
+              <div style={{ display: 'flex' }}>
                 <TextField
                   name="members"
                   style={{width: 450}}
@@ -147,11 +143,15 @@ class ArbiterForm extends Component {
                   onChange={this.handleNewMemberChange}
                   errorText={this.state.memberErrorMessage}
                 />
-                <RaisedButton label="Add" onClick={this.handleAddMember} primary />
+                <RaisedButton style={{alignSelf: 'flex-end', marginLeft: 20}} label="Add" onClick={this.handleAddMember} primary />
               </div>
+              <h4>Current members:</h4>
+              { this.state.members.length == 0 ? "No members added yet." : <this.Members /> }
             </CardText>
+            <CardActions>
+              <RaisedButton type="submit" label="Create Arbiter" primary />
+            </CardActions>
           </Card>
-          <RaisedButton type="submit" label="Create Arbiter" primary />
         </form>
       </div>
   )}
