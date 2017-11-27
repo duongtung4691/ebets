@@ -27,6 +27,7 @@ class Master extends Component {
 
   static contextTypes = {
     router: PropTypes.object.isRequired,
+    web3Utils: PropTypes.object
   };
 
   static childContextTypes = {
@@ -42,7 +43,7 @@ class Master extends Component {
   getChildContext() {
     return {
       muiTheme: this.state.muiTheme,
-      showUnfeatured: this.state.showUnfeatured      
+      showUnfeatured: this.state.showUnfeatured
     };
   }
 
@@ -208,10 +209,5 @@ class Master extends Component {
     );
   }
 }
-
-Master.contextTypes = {
-  web3Utils: PropTypes.object
-};
-
 
 export default withWidth()(Master);

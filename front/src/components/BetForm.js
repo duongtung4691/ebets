@@ -261,12 +261,13 @@ class BetForm extends Component {
     ], this.context.web3Utils.selectedAccount)
     contract.send({ gas })
     .once('transactionHash', (txHash) => {
-      this.setState({ alert: { type: 'info', message: `Created transaction with hash: ${txHash}\
+      this.setState({ alert: { type: 'info', message: `Created transaction with hash: ${txHash} \
       Waiting for confirmation`, open: true }, transactionInProcess: true });
     })
     .once('receipt', (receipt) => {
-      this.setState({ alert: { type: 'info', message: `Got receipt,\
-      contract address: ${receipt.contractAddress}`, open: true }, transactionInProcess: true });
+      this.setState({ alert: { type: 'info', message: `Got receipt, \
+      please copy the following contract address: ${receipt.contractAddress} \
+      and use it as your arbiter. We will not store it!`, open: true }, transactionInProcess: true });
     })
     .once('error', (error) => {
       this.setState({ alert: { type: 'danger', message: `Error: ${error.message}\

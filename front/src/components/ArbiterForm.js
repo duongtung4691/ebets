@@ -80,10 +80,11 @@ class ArbiterForm extends Component {
 
   handleAddMember = () => {
     if (this.state.newMember) {
-      this.setState(previousState => {
-        if (previousState.members.indexOf(previousState.newMember) == -1)
-          previousState.members.push(previousState.newMember);
-      });
+       this.setState(previousState => {
+        if (previousState.members.indexOf(previousState.newMember) == -1) {
+          return {members: [...previousState.members, previousState.newMember]}
+        }
+      })
     }
   }
 

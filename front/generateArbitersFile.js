@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-var Monarchy = require('../build/contracts/Monarchy.json');
-var fs = require('fs');
-
-jsonFiles = {};
+var Monarchy = require('../build/contracts/Monarchy.json')
+var fs = require('fs')
+let jsonFiles = {}
 
 jsonFiles['Monarchy'] = {
-  name: 'Monarchy', 
+  name: 'Monarchy',
   description: 'The Monarchy contract consists of a single Arbiter that decides bets\' results'
 }
 
@@ -15,4 +14,4 @@ for (var networkId in Monarchy.networks) {
   }
 }
 
-fs.writeFileSync('./src/utils/ebetsArbiters.json', JSON.stringify(jsonFiles));
+fs.writeFileSync('./src/utils/ebetsArbiters.json', JSON.stringify(jsonFiles))
